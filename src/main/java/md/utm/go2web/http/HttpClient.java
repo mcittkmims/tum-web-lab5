@@ -33,21 +33,41 @@ public class HttpClient {
 
         HttpResponse response = sendRawRequest(parsed, rawRequest);
 
-        if (response.isRedirect() && remainingRedirects > 0) {
+        if (response.isRedirect()) {
+            if (remainingRedirects == 0) {
+                throw new IOException("Too many redirects (max " + MAX_REDIRECTS + ")");
+            }
             String location = response.location();
             if (location == null || location.isBlank()) {
                 return response;
             }
-            if (!location.startsWith("http://") && !location.startsWith("https://")) {
-                location = parsed.scheme() + "://" + parsed.host()
-                        + (parsed.port() != (parsed.scheme().equals("https") ? 443 : 80)
-                        ? ":" + parsed.port() : "")
-                        + (location.startsWith("/") ? location : "/" + location);
-            }
+            location = resolveLocation(location, parsed);
             return fetchWithRedirects(location, remainingRedirects - 1);
         }
 
         return response;
+    }
+
+    private String resolveLocation(String location, UrlParser.ParsedUrl base) {
+        if (location.startsWith("http://") || location.startsWith("https://")) {
+            return location;
+        }
+        // Protocol-relative: //host/path
+        if (location.startsWith("//")) {
+            return base.scheme() + ":" + location;
+        }
+        int defaultPort = base.scheme().equals("https") ? 443 : 80;
+        String portPart = base.port() != defaultPort ? ":" + base.port() : "";
+        String baseOrigin = base.scheme() + "://" + base.host() + portPart;
+        // Absolute path
+        if (location.startsWith("/")) {
+            return baseOrigin + location;
+        }
+        // Relative path — resolve against current path directory
+        String currentPath = base.pathAndQuery();
+        int lastSlash = currentPath.lastIndexOf('/');
+        String dir = lastSlash >= 0 ? currentPath.substring(0, lastSlash + 1) : "/";
+        return baseOrigin + dir + location;
     }
 
     private HttpResponse sendRawRequest(UrlParser.ParsedUrl parsed, String rawRequest)
