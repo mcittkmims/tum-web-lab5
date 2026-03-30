@@ -3,9 +3,6 @@ package md.utm.go2web.cli;
 import md.utm.go2web.http.HttpClient;
 import md.utm.go2web.http.HttpResponse;
 import md.utm.go2web.render.HtmlRenderer;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
-import picocli.CommandLine.Parameters;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,16 +10,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Scanner;
 
-@Command(name = "-s", description = "Search the web and print top 10 results")
-public class SearchCommand implements Runnable {
-
-    @Parameters(index = "0..*", description = "Search terms")
-    private List<String> terms;
-
-    @Option(names = "--engine",
-            description = "Search engine to use: DUCKDUCKGO (default), YAHOO",
-            defaultValue = "DUCKDUCKGO")
-    private String engineName;
+public class SearchCommand {
 
     private final HttpClient client;
 
@@ -34,13 +22,7 @@ public class SearchCommand implements Runnable {
         this.client = client;
     }
 
-    @Override
-    public void run() {
-        if (terms == null || terms.isEmpty()) {
-            System.err.println("Please provide a search term.");
-            return;
-        }
-
+    public void runSearch(List<String> terms, String engineName) {
         SearchEngine engine = resolveEngine(engineName);
         String query = String.join(" ", terms);
         List<HtmlRenderer.SearchResult> results = search(query, engine);
@@ -91,18 +73,15 @@ public class SearchCommand implements Runnable {
     }
 
     private SearchEngine resolveEngine(String flagValue) {
-        // --engine flag takes priority over config file
         if (flagValue != null && !flagValue.equalsIgnoreCase("DUCKDUCKGO")) {
             return SearchEngine.fromString(flagValue);
         }
-        // Read from ~/.go2web-config
         Path config = Path.of(System.getProperty("go2web.home", System.getProperty("user.home")), "go2web.config");
         if (Files.exists(config)) {
             try {
                 for (String line : Files.readAllLines(config)) {
                     if (line.startsWith("engine=")) {
-                        String configured = line.substring(7).trim();
-                        return SearchEngine.fromString(configured);
+                        return SearchEngine.fromString(line.substring(7).trim());
                     }
                 }
             } catch (IOException ignored) {}

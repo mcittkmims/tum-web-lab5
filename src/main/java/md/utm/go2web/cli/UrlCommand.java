@@ -1,24 +1,12 @@
 package md.utm.go2web.cli;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import md.utm.go2web.http.HttpClient;
 import md.utm.go2web.http.HttpResponse;
 import md.utm.go2web.render.HtmlRenderer;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
-import picocli.CommandLine.Parameters;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-
-@Command(name = "-u", description = "Fetch a URL and print human-readable content")
-public class UrlCommand implements Runnable {
-
-    @Parameters(index = "0", description = "The URL to fetch")
-    private String url;
-
-    @Option(names = "--accept", description = "Preferred content type: JSON, HTML, ANY (default: ANY)",
-            defaultValue = "ANY")
-    private HttpClient.ContentPreference accept;
+public class UrlCommand {
 
     private final HttpClient client;
 
@@ -30,21 +18,16 @@ public class UrlCommand implements Runnable {
         this.client = client;
     }
 
-    @Override
-    public void run() {
-        fetchAndPrint(url, accept);
+    public void fetchAndPrint(String url) {
+        fetchAndPrint(url, HttpClient.ContentPreference.ANY);
     }
 
-    public void fetchAndPrint(String targetUrl) {
-        fetchAndPrint(targetUrl, HttpClient.ContentPreference.ANY);
-    }
-
-    public void fetchAndPrint(String targetUrl, HttpClient.ContentPreference preference) {
+    public void fetchAndPrint(String url, HttpClient.ContentPreference preference) {
         try {
-            HttpResponse response = client.fetch(targetUrl, preference);
+            HttpResponse response = client.fetch(url, preference);
             System.out.println(renderResponse(response));
         } catch (Exception e) {
-            System.err.println("Error fetching " + targetUrl + ": " + e.getMessage());
+            System.err.println("Error fetching " + url + ": " + e.getMessage());
         }
     }
 
