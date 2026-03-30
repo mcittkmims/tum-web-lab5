@@ -1,5 +1,7 @@
 package md.utm.go2web.http;
 
+import md.utm.go2web.cache.FileCache;
+
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import java.io.*;
@@ -14,8 +16,33 @@ public class HttpClient {
     private static final int MAX_REDIRECTS = 10;
     private static final int TIMEOUT_MS = 15_000;
 
+    private final FileCache cache;
+
+    public HttpClient() {
+        FileCache c = null;
+        try {
+            c = new FileCache();
+        } catch (IOException ignored) {}
+        this.cache = c;
+    }
+
+    public HttpClient(FileCache cache) {
+        this.cache = cache;
+    }
+
     public HttpResponse fetch(String url) throws IOException {
-        return fetchWithRedirects(url, MAX_REDIRECTS);
+        if (cache != null) {
+            String cached = cache.get(url);
+            if (cached != null) {
+                String contentType = cache.getContentType(url);
+                return new HttpResponse(200, "OK (cached)", Map.of("content-type", contentType), cached);
+            }
+        }
+        HttpResponse response = fetchWithRedirects(url, MAX_REDIRECTS);
+        if (cache != null && response.statusCode() == 200) {
+            cache.put(url, response.body(), response.contentType());
+        }
+        return response;
     }
 
     private HttpResponse fetchWithRedirects(String url, int remainingRedirects) throws IOException {
