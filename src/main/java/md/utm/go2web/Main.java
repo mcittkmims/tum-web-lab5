@@ -1,7 +1,7 @@
 package md.utm.go2web;
 
+import md.utm.go2web.cli.AppConfig;
 import md.utm.go2web.cli.SearchCommand;
-import md.utm.go2web.cli.SearchEngine;
 import md.utm.go2web.cli.UrlCommand;
 import md.utm.go2web.http.HttpClient;
 import picocli.CommandLine;
@@ -19,16 +19,14 @@ public class Main implements Runnable {
     @Option(names = "-u", description = "Fetch a URL and print human-readable content.")
     String url;
 
-    @Option(names = "--accept", description = "Preferred content type: JSON, HTML, ANY (default: ANY).",
-            defaultValue = "ANY")
+    @Option(names = "--accept", description = "Preferred content type: JSON, HTML, ANY (default: ANY).")
     HttpClient.ContentPreference accept;
 
     @Option(names = "-s", description = "Search the web and print top 10 results.",
             arity = "1..*")
     List<String> searchTerms;
 
-    @Option(names = "--engine", description = "Search engine: DUCKDUCKGO (default), YAHOO.",
-            defaultValue = "DUCKDUCKGO")
+    @Option(names = "--engine", description = "Search engine: DUCKDUCKGO (default), YAHOO.")
     String engine;
 
     public static void main(String[] args) {
@@ -56,12 +54,15 @@ public class Main implements Runnable {
 
     @Override
     public void run() {
+        AppConfig config = new AppConfig();
         if (help) {
             System.out.print(HELP);
         } else if (url != null) {
-            new UrlCommand().fetchAndPrint(url, accept);
+            HttpClient.ContentPreference resolvedAccept = accept != null ? accept : config.accept();
+            new UrlCommand().fetchAndPrint(url, resolvedAccept);
         } else if (searchTerms != null) {
-            new SearchCommand().runSearch(searchTerms, engine);
+            String resolvedEngine = engine != null ? engine : config.engine().name();
+            new SearchCommand().runSearch(searchTerms, resolvedEngine);
         } else {
             System.out.print(HELP);
         }
