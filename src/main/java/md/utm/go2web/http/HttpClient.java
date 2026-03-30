@@ -30,7 +30,21 @@ public class HttpClient {
         this.cache = cache;
     }
 
+    /** Preferred content types in order, e.g. "application/json" or "text/html" */
+    public enum ContentPreference {
+        JSON("application/json, text/html;q=0.9, */*;q=0.8"),
+        HTML("text/html, application/json;q=0.9, */*;q=0.8"),
+        ANY("*/*");
+
+        public final String acceptHeader;
+        ContentPreference(String acceptHeader) { this.acceptHeader = acceptHeader; }
+    }
+
     public HttpResponse fetch(String url) throws IOException {
+        return fetch(url, ContentPreference.ANY);
+    }
+
+    public HttpResponse fetch(String url, ContentPreference preference) throws IOException {
         if (cache != null) {
             String cached = cache.get(url);
             if (cached != null) {
@@ -38,20 +52,21 @@ public class HttpClient {
                 return new HttpResponse(200, "OK (cached)", Map.of("content-type", contentType), cached);
             }
         }
-        HttpResponse response = fetchWithRedirects(url, MAX_REDIRECTS);
+        HttpResponse response = fetchWithRedirects(url, MAX_REDIRECTS, preference);
         if (cache != null && response.statusCode() == 200) {
             cache.put(url, response.body(), response.contentType());
         }
         return response;
     }
 
-    private HttpResponse fetchWithRedirects(String url, int remainingRedirects) throws IOException {
+    private HttpResponse fetchWithRedirects(String url, int remainingRedirects,
+                                             ContentPreference preference) throws IOException {
         UrlParser.ParsedUrl parsed = UrlParser.parse(url);
 
         String requestLine = "GET " + parsed.pathAndQuery() + " HTTP/1.1\r\n";
         String headers =
                 "Host: " + parsed.host() + "\r\n" +
-                "Accept: application/json, text/html;q=0.9, */*;q=0.8\r\n" +
+                "Accept: " + preference.acceptHeader + "\r\n" +
                 "Accept-Encoding: identity\r\n" +
                 "Connection: close\r\n" +
                 "User-Agent: go2web/1.0\r\n" +
@@ -69,7 +84,7 @@ public class HttpClient {
                 return response;
             }
             location = resolveLocation(location, parsed);
-            return fetchWithRedirects(location, remainingRedirects - 1);
+            return fetchWithRedirects(location, remainingRedirects - 1, preference);
         }
 
         return response;
