@@ -4,9 +4,6 @@ import md.utm.go2web.http.HttpClient;
 import md.utm.go2web.http.HttpResponse;
 import md.utm.go2web.render.HtmlRenderer;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Scanner;
 
@@ -72,20 +69,7 @@ public class SearchCommand {
         }
     }
 
-    private SearchEngine resolveEngine(String flagValue) {
-        if (flagValue != null && !flagValue.equalsIgnoreCase("DUCKDUCKGO")) {
-            return SearchEngine.fromString(flagValue);
-        }
-        Path config = Path.of(System.getProperty("go2web.home", System.getProperty("user.home")), "go2web.config");
-        if (Files.exists(config)) {
-            try {
-                for (String line : Files.readAllLines(config)) {
-                    if (line.startsWith("engine=")) {
-                        return SearchEngine.fromString(line.substring(7).trim());
-                    }
-                }
-            } catch (IOException ignored) {}
-        }
-        return SearchEngine.fromString(flagValue);
+    private SearchEngine resolveEngine(String engineName) {
+        return SearchEngine.fromString(engineName);
     }
 }
