@@ -4,18 +4,25 @@ import md.utm.go2web.http.HttpClient;
 import md.utm.go2web.http.HttpResponse;
 import md.utm.go2web.render.HtmlRenderer;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Scanner;
 
-@Command(name = "-s", description = "Search DuckDuckGo and print top 10 results")
+@Command(name = "-s", description = "Search the web and print top 10 results")
 public class SearchCommand implements Runnable {
 
     @Parameters(index = "0..*", description = "Search terms")
     private List<String> terms;
+
+    @Option(names = "--engine",
+            description = "Search engine to use: DUCKDUCKGO (default), YAHOO",
+            defaultValue = "DUCKDUCKGO")
+    private String engineName;
 
     private final HttpClient client;
 
@@ -34,8 +41,9 @@ public class SearchCommand implements Runnable {
             return;
         }
 
+        SearchEngine engine = resolveEngine(engineName);
         String query = String.join(" ", terms);
-        List<HtmlRenderer.SearchResult> results = search(query);
+        List<HtmlRenderer.SearchResult> results = search(query, engine);
 
         if (results.isEmpty()) {
             System.out.println("No results found.");
@@ -71,15 +79,34 @@ public class SearchCommand implements Runnable {
         }
     }
 
-    private List<HtmlRenderer.SearchResult> search(String query) {
-        String encoded = URLEncoder.encode(query, StandardCharsets.UTF_8);
-        String url = "http://html.duckduckgo.com/html/?q=" + encoded;
+    private List<HtmlRenderer.SearchResult> search(String query, SearchEngine engine) {
+        String url = engine.buildUrl(query);
         try {
             HttpResponse response = client.fetch(url);
-            return HtmlRenderer.extractDuckDuckGoResults(response.body());
+            return engine.parseResults(response);
         } catch (Exception e) {
             System.err.println("Search failed: " + e.getMessage());
             return List.of();
         }
+    }
+
+    private SearchEngine resolveEngine(String flagValue) {
+        // --engine flag takes priority over config file
+        if (flagValue != null && !flagValue.equalsIgnoreCase("DUCKDUCKGO")) {
+            return SearchEngine.fromString(flagValue);
+        }
+        // Read from ~/.go2web-config
+        Path config = Path.of(System.getProperty("user.home"), ".go2web-config");
+        if (Files.exists(config)) {
+            try {
+                for (String line : Files.readAllLines(config)) {
+                    if (line.startsWith("engine=")) {
+                        String configured = line.substring(7).trim();
+                        return SearchEngine.fromString(configured);
+                    }
+                }
+            } catch (IOException ignored) {}
+        }
+        return SearchEngine.fromString(flagValue);
     }
 }
