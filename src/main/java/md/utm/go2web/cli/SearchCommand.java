@@ -96,7 +96,7 @@ public class SearchCommand implements Runnable {
             return SearchEngine.fromString(flagValue);
         }
         // Read from ~/.go2web-config
-        Path config = Path.of(System.getProperty("user.home"), ".go2web-config");
+        Path config = Path.of(System.getProperty("go2web.home", System.getProperty("user.home")), "go2web.config");
         if (Files.exists(config)) {
             try {
                 for (String line : Files.readAllLines(config)) {
