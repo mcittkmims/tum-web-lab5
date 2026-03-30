@@ -53,13 +53,23 @@ public class HtmlRenderer {
         Document doc = Jsoup.parse(html);
         List<SearchResult> results = new ArrayList<>();
 
-        for (Element anchor : doc.select("div.algo h3.title a")) {
-            String title = anchor.text().trim();
-            String href = anchor.attr("href");
-            if (!title.isEmpty() && !href.isEmpty()) {
-                results.add(new SearchResult(title, href));
+        // Try multiple selector patterns for Yahoo's evolving markup
+        java.util.Set<String> seen = new java.util.LinkedHashSet<>();
+        for (String selector : new String[]{
+                "div.compTitle h3 a",
+                "h3.title a",
+                "div.compTitle a",
+                "li.algo h3 a"
+        }) {
+            for (Element anchor : doc.select(selector)) {
+                String title = anchor.text().trim();
+                String href = anchor.attr("href");
+                if (!title.isEmpty() && !href.isEmpty() && href.startsWith("http") && seen.add(href)) {
+                    results.add(new SearchResult(title, href));
+                }
+                if (results.size() == 10) break;
             }
-            if (results.size() == 10) break;
+            if (!results.isEmpty()) break;
         }
 
         return results;
