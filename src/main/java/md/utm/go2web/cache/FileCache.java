@@ -15,7 +15,7 @@ public class FileCache {
 
     private static final long TTL_SECONDS = 3600;
     private static final Path CACHE_DIR =
-            Path.of(System.getProperty("user.home"), ".go2web-cache");
+            Path.of(System.getProperty("go2web.home", System.getProperty("user.home")), ".go2web-cache");
 
     private final ObjectMapper mapper = new ObjectMapper();
 
