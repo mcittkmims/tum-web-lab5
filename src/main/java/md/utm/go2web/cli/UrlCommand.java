@@ -4,6 +4,7 @@ import md.utm.go2web.http.HttpClient;
 import md.utm.go2web.http.HttpResponse;
 import md.utm.go2web.render.HtmlRenderer;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +15,10 @@ public class UrlCommand implements Runnable {
 
     @Parameters(index = "0", description = "The URL to fetch")
     private String url;
+
+    @Option(names = "--accept", description = "Preferred content type: JSON, HTML, ANY (default: ANY)",
+            defaultValue = "ANY")
+    private HttpClient.ContentPreference accept;
 
     private final HttpClient client;
 
@@ -27,12 +32,16 @@ public class UrlCommand implements Runnable {
 
     @Override
     public void run() {
-        fetchAndPrint(url);
+        fetchAndPrint(url, accept);
     }
 
     public void fetchAndPrint(String targetUrl) {
+        fetchAndPrint(targetUrl, HttpClient.ContentPreference.ANY);
+    }
+
+    public void fetchAndPrint(String targetUrl, HttpClient.ContentPreference preference) {
         try {
-            HttpResponse response = client.fetch(targetUrl);
+            HttpResponse response = client.fetch(targetUrl, preference);
             System.out.println(renderResponse(response));
         } catch (Exception e) {
             System.err.println("Error fetching " + targetUrl + ": " + e.getMessage());
