@@ -1,0 +1,85 @@
+name: Release Native Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: go2web
+            asset_name: go2web-linux-amd64
+          - os: macos-latest
+            artifact_name: go2web
+            asset_name: go2web-macos-arm64
+          - os: macos-13
+            artifact_name: go2web
+            asset_name: go2web-macos-amd64
+          - os: windows-latest
+            artifact_name: go2web.exe
+            asset_name: go2web-windows-amd64.exe
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '17'
+          distribution: 'graalvm'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          native-image-job-reports: 'true'
+
+      - name: Build native binary
+        run: mvn -Pnative -DskipTests package --no-transfer-progress
+
+      - name: Ad-hoc sign binary (macOS)
+        if: runner.os == 'macOS'
+        run: codesign --sign - target/go2web
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: target/${{ matrix.artifact_name }}
+          retention-days: 1
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          cp artifacts/go2web-linux-amd64/go2web          go2web-linux-amd64
+          cp artifacts/go2web-macos-arm64/go2web          go2web-macos-arm64
+          cp artifacts/go2web-macos-amd64/go2web          go2web-macos-amd64
+          cp artifacts/go2web-windows-amd64.exe/go2web.exe go2web-windows-amd64.exe
+          chmod +x go2web-linux-amd64 go2web-macos-arm64 go2web-macos-amd64
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "go2web ${{ github.ref_name }}"
+          generate_release_notes: true
+          files: |
+            go2web-linux-amd64
+            go2web-macos-arm64
+            go2web-macos-amd64
+            go2web-windows-amd64.exe
