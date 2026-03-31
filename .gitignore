@@ -1,2 +1,4 @@
 target/
 .go2web-cache/
+.DS_Store
+**/.DS_Store
