@@ -2,12 +2,34 @@
 
 A command-line HTTP client built on raw TCP sockets (no HTTP libraries). Makes HTTP/HTTPS requests, follows redirects, parses HTML to plain text, caches responses, and searches the web.
 
-## Requirements
+## Install (no Java required)
+
+1. Download the archive for your platform from the [latest release](https://github.com/mcittkmims/tum-web-lab5/releases/latest)
+2. Extract it
+3. Run the install script inside
+
+**macOS / Linux:**
+```bash
+tar -xzf go2web-<platform>.tar.gz
+./install.sh
+```
+
+**Windows (PowerShell):**
+```powershell
+Expand-Archive go2web-windows-amd64.zip
+.\install.ps1
+```
+
+After install, `go2web` is available from any terminal. To uninstall, run `uninstall.sh` / `uninstall.ps1` from the same archive.
+
+---
+
+## Build from source
+
+### Requirements
 
 - Java 17+
 - Maven 3.6+
-
-## Build
 
 ```bash
 mvn clean package -q
