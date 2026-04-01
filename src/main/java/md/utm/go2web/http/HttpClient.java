@@ -2,6 +2,8 @@ package md.utm.go2web.http;
 
 import md.utm.go2web.cache.FileCache;
 
+import javax.net.ssl.SNIHostName;
+import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import java.io.*;
@@ -9,6 +11,7 @@ import java.net.Socket;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class HttpClient {
@@ -129,6 +132,10 @@ public class HttpClient {
         if ("https".equals(scheme)) {
             SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
             SSLSocket ssl = (SSLSocket) factory.createSocket(host, port);
+            SSLParameters params = ssl.getSSLParameters();
+            params.setServerNames(List.of(new SNIHostName(host)));
+            params.setApplicationProtocols(new String[]{"http/1.1"});
+            ssl.setSSLParameters(params);
             ssl.setEnabledProtocols(new String[]{"TLSv1.2", "TLSv1.3"});
             ssl.startHandshake();
             return ssl;
