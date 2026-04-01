@@ -53,7 +53,7 @@ public class HttpClient {
             String cached = cache.get(url, prefKey);
             if (cached != null) {
                 String contentType = cache.getContentType(url, prefKey);
-                return new HttpResponse(200, "OK (cached)", Map.of("content-type", contentType), cached);
+                return new HttpResponse(200, "OK", Map.of("content-type", contentType), cached, true);
             }
         }
         HttpResponse response = fetchWithRedirects(url, MAX_REDIRECTS, preference);
