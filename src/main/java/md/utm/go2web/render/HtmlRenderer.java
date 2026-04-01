@@ -13,7 +13,13 @@ public class HtmlRenderer {
     public static String toPlainText(String html) {
         Document doc = Jsoup.parse(html);
         doc.select("script, style, head, noscript, svg, img").remove();
-        return doc.body() != null ? doc.body().wholeText().replaceAll("[ \\t]+", " ").trim() : "";
+        return doc.body() != null
+                ? doc.body().wholeText()
+                        .replaceAll("[ \\t]+", " ")
+                        .replaceAll("(?m)^ +$", "")
+                        .replaceAll("\n{3,}", "\n\n")
+                        .trim()
+                : "";
     }
 
     public record SearchResult(String title, String url) {}
