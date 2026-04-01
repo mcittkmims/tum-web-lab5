@@ -62,6 +62,7 @@ public class SearchCommand {
         String url = engine.buildUrl(query);
         try {
             HttpResponse response = client.fetch(url);
+            if (response.cached()) System.out.println("[cached]");
             return engine.parseResults(response);
         } catch (Exception e) {
             System.err.println("Search failed: " + e.getMessage());
