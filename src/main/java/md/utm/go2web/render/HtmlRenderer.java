@@ -59,23 +59,15 @@ public class HtmlRenderer {
         Document doc = Jsoup.parse(html);
         List<SearchResult> results = new ArrayList<>();
 
-        // Try multiple selector patterns for Yahoo's evolving markup
-        java.util.Set<String> seen = new java.util.LinkedHashSet<>();
-        for (String selector : new String[]{
-                "div.compTitle h3 a",
-                "h3.title a",
-                "div.compTitle a",
-                "li.algo h3 a"
-        }) {
-            for (Element anchor : doc.select(selector)) {
-                String title = anchor.text().trim();
-                String href = anchor.attr("href");
-                if (!title.isEmpty() && !href.isEmpty() && href.startsWith("http") && seen.add(href)) {
-                    results.add(new SearchResult(title, href));
-                }
-                if (results.size() == 10) break;
+        for (Element anchor : doc.select("div.algo div.compTitle a")) {
+            String title = anchor.text().trim();
+            String href = anchor.attr("href");
+            if (!title.isEmpty() && !href.isEmpty()
+                    && href.startsWith("http")
+                    && !href.contains("search.yahoo.com")) {
+                results.add(new SearchResult(title, href));
             }
-            if (!results.isEmpty()) break;
+            if (results.size() == 10) break;
         }
 
         return results;
