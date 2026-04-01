@@ -89,7 +89,7 @@ public class HttpClient {
         }
 
         if (cache != null && response.statusCode() == 200 && isCacheable(response)) {
-            cache.put(url, prefKey, response.body(), response.contentType());
+            cache.put(url, prefKey, response.body(), response.contentType(), parseMaxAge(response));
         }
         return response;
     }
@@ -100,6 +100,19 @@ public class HttpClient {
         String pragma = response.headers().getOrDefault("pragma", "").toLowerCase();
         if (pragma.contains("no-cache")) return false;
         return true;
+    }
+
+    private long parseMaxAge(HttpResponse response) {
+        String cacheControl = response.headers().getOrDefault("cache-control", "");
+        for (String directive : cacheControl.split(",")) {
+            directive = directive.trim().toLowerCase();
+            if (directive.startsWith("max-age=")) {
+                try {
+                    return Long.parseLong(directive.substring(8).trim());
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+        return -1; // no max-age → FileCache will use its default
     }
 
     private String resolveLocation(String location, UrlParser.ParsedUrl base) {

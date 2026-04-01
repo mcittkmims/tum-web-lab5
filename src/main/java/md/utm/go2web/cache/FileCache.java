@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class FileCache {
 
-    private static final long TTL_SECONDS = 3600;
+    private static final long DEFAULT_TTL_SECONDS = 3600;
     private static final Path CACHE_DIR =
             Path.of(System.getProperty("go2web.home", System.getProperty("user.home")), ".go2web-cache");
 
@@ -32,7 +32,10 @@ public class FileCache {
             @SuppressWarnings("unchecked")
             Map<String, Object> meta = mapper.readValue(metaFile.toFile(), Map.class);
             long cachedAt = ((Number) meta.get("cachedAt")).longValue();
-            if (System.currentTimeMillis() / 1000 - cachedAt > TTL_SECONDS) {
+            long ttl = meta.containsKey("maxAge")
+                    ? ((Number) meta.get("maxAge")).longValue()
+                    : DEFAULT_TTL_SECONDS;
+            if (System.currentTimeMillis() / 1000 - cachedAt > ttl) {
                 Files.deleteIfExists(bodyFile);
                 Files.deleteIfExists(metaFile);
                 return null;
@@ -56,16 +59,16 @@ public class FileCache {
         }
     }
 
-    public void put(String url, String preference, String body, String contentType) {
+    public void put(String url, String preference, String body, String contentType, long maxAge) {
         String key = keyFor(url, preference);
         Path bodyFile = CACHE_DIR.resolve(key);
         Path metaFile = CACHE_DIR.resolve(key + ".meta");
         try {
             Files.writeString(bodyFile, body, StandardCharsets.UTF_8);
-            Map<String, Object> meta = Map.of(
-                    "contentType", contentType != null ? contentType : "",
-                    "cachedAt", System.currentTimeMillis() / 1000
-            );
+            java.util.HashMap<String, Object> meta = new java.util.HashMap<>();
+            meta.put("contentType", contentType != null ? contentType : "");
+            meta.put("cachedAt", System.currentTimeMillis() / 1000);
+            if (maxAge >= 0) meta.put("maxAge", maxAge);
             mapper.writeValue(metaFile.toFile(), meta);
         } catch (IOException e) {
             // cache write failure is non-fatal
