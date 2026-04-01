@@ -23,8 +23,8 @@ public class FileCache {
         Files.createDirectories(CACHE_DIR);
     }
 
-    public String get(String url) {
-        String key = keyFor(url);
+    public String get(String url, String preference) {
+        String key = keyFor(url, preference);
         Path bodyFile = CACHE_DIR.resolve(key);
         Path metaFile = CACHE_DIR.resolve(key + ".meta");
         if (!Files.exists(bodyFile) || !Files.exists(metaFile)) return null;
@@ -43,8 +43,8 @@ public class FileCache {
         }
     }
 
-    public String getContentType(String url) {
-        String key = keyFor(url);
+    public String getContentType(String url, String preference) {
+        String key = keyFor(url, preference);
         Path metaFile = CACHE_DIR.resolve(key + ".meta");
         if (!Files.exists(metaFile)) return "";
         try {
@@ -56,8 +56,8 @@ public class FileCache {
         }
     }
 
-    public void put(String url, String body, String contentType) {
-        String key = keyFor(url);
+    public void put(String url, String preference, String body, String contentType) {
+        String key = keyFor(url, preference);
         Path bodyFile = CACHE_DIR.resolve(key);
         Path metaFile = CACHE_DIR.resolve(key + ".meta");
         try {
@@ -72,10 +72,11 @@ public class FileCache {
         }
     }
 
-    public static String keyFor(String url) {
+    public static String keyFor(String url, String preference) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hash = md.digest(url.getBytes(StandardCharsets.UTF_8));
+            String key = url + "\0" + (preference != null ? preference : "ANY");
+            byte[] hash = md.digest(key.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(hash);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);

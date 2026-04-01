@@ -48,16 +48,17 @@ public class HttpClient {
     }
 
     public HttpResponse fetch(String url, ContentPreference preference) throws IOException {
+        String prefKey = preference.name();
         if (cache != null) {
-            String cached = cache.get(url);
+            String cached = cache.get(url, prefKey);
             if (cached != null) {
-                String contentType = cache.getContentType(url);
+                String contentType = cache.getContentType(url, prefKey);
                 return new HttpResponse(200, "OK (cached)", Map.of("content-type", contentType), cached);
             }
         }
         HttpResponse response = fetchWithRedirects(url, MAX_REDIRECTS, preference);
         if (cache != null && response.statusCode() == 200) {
-            cache.put(url, response.body(), response.contentType());
+            cache.put(url, prefKey, response.body(), response.contentType());
         }
         return response;
     }
