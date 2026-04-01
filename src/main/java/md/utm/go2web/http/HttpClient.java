@@ -48,6 +48,11 @@ public class HttpClient {
     }
 
     public HttpResponse fetch(String url, ContentPreference preference) throws IOException {
+        return fetchWithRedirects(url, MAX_REDIRECTS, preference);
+    }
+
+    private HttpResponse fetchWithRedirects(String url, int remainingRedirects,
+                                             ContentPreference preference) throws IOException {
         String prefKey = preference.name();
         if (cache != null) {
             String cached = cache.get(url, prefKey);
@@ -56,15 +61,7 @@ public class HttpClient {
                 return new HttpResponse(200, "OK", Map.of("content-type", contentType), cached, true);
             }
         }
-        HttpResponse response = fetchWithRedirects(url, MAX_REDIRECTS, preference);
-        if (cache != null && response.statusCode() == 200) {
-            cache.put(url, prefKey, response.body(), response.contentType());
-        }
-        return response;
-    }
 
-    private HttpResponse fetchWithRedirects(String url, int remainingRedirects,
-                                             ContentPreference preference) throws IOException {
         UrlParser.ParsedUrl parsed = UrlParser.parse(url);
 
         String requestLine = "GET " + parsed.pathAndQuery() + " HTTP/1.1\r\n";
@@ -91,6 +88,9 @@ public class HttpClient {
             return fetchWithRedirects(location, remainingRedirects - 1, preference);
         }
 
+        if (cache != null && response.statusCode() == 200) {
+            cache.put(url, prefKey, response.body(), response.contentType());
+        }
         return response;
     }
 
