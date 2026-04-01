@@ -25,6 +25,7 @@ public class UrlCommand {
     public void fetchAndPrint(String url, HttpClient.ContentPreference preference) {
         try {
             HttpResponse response = client.fetch(url, preference);
+            if (response.cached()) System.out.println("[cached]");
             System.out.println(renderResponse(response));
         } catch (Exception e) {
             System.err.println("Error fetching " + url + ": " + e.getMessage());

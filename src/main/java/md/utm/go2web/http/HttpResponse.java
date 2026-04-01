@@ -6,8 +6,12 @@ public record HttpResponse(
         int statusCode,
         String statusMessage,
         Map<String, String> headers,
-        String body
+        String body,
+        boolean cached
 ) {
+    public HttpResponse(int statusCode, String statusMessage, Map<String, String> headers, String body) {
+        this(statusCode, statusMessage, headers, body, false);
+    }
     public boolean isRedirect() {
         return statusCode == 301 || statusCode == 302 || statusCode == 303
                 || statusCode == 307 || statusCode == 308;
