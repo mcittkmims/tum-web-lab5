@@ -85,6 +85,7 @@ public class HttpClient {
                 return response;
             }
             location = resolveLocation(location, parsed);
+            System.err.println("→ " + response.statusCode() + " " + url + " -> " + location);
             return fetchWithRedirects(location, remainingRedirects - 1, preference);
         }
 
