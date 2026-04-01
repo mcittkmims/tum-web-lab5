@@ -88,10 +88,18 @@ public class HttpClient {
             return fetchWithRedirects(location, remainingRedirects - 1, preference);
         }
 
-        if (cache != null && response.statusCode() == 200) {
+        if (cache != null && response.statusCode() == 200 && isCacheable(response)) {
             cache.put(url, prefKey, response.body(), response.contentType());
         }
         return response;
+    }
+
+    private boolean isCacheable(HttpResponse response) {
+        String cacheControl = response.headers().getOrDefault("cache-control", "").toLowerCase();
+        if (cacheControl.contains("no-store") || cacheControl.contains("no-cache")) return false;
+        String pragma = response.headers().getOrDefault("pragma", "").toLowerCase();
+        if (pragma.contains("no-cache")) return false;
+        return true;
     }
 
     private String resolveLocation(String location, UrlParser.ParsedUrl base) {
