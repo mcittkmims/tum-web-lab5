@@ -1,92 +1,123 @@
 # go2web
 
-A command-line HTTP client built on raw TCP sockets (no HTTP libraries). Makes HTTP/HTTPS requests, follows redirects, parses HTML to plain text, caches responses, and searches the web.
+`go2web` is a command-line HTTP client built for the Web Development laboratory. It performs HTTP and HTTPS requests over raw sockets, renders HTML into readable terminal output, supports simple web search, follows redirects, and stores cache entries on disk.
 
-## Install (no Java required)
+## Overview
 
-1. Download the archive for your platform from the [latest release](https://github.com/mcittkmims/tum-web-lab5/releases/latest)
-2. Extract it
-3. Run the install script inside
+The project intentionally avoids built-in or third-party HTTP client libraries for network requests. Instead, it implements request construction, socket communication, response parsing, redirect handling, and cache management directly in Java.
 
-**macOS / Linux:**
-```bash
-tar -xzf go2web-<platform>.tar.gz
-./install.sh
+## Features
+
+- Fetches `http://` and `https://` URLs from the terminal
+- Supports content negotiation with `--accept JSON` and `--accept HTML`
+- Renders HTML responses into human-readable text
+- Pretty-prints JSON responses
+- Searches the web and prints the top 10 results
+- Supports DuckDuckGo and Yahoo search
+- Follows redirects up to 10 hops
+- Persists cached responses on disk
+
+## Tech Stack
+
+- Java 17
+- Maven
+- Picocli for CLI parsing
+- Jsoup for HTML-to-text rendering
+- Jackson for cache metadata and JSON formatting
+
+## Project Structure
+
+```text
+.
+├── go2web
+├── scripts/
+├── src/main/java/md/utm/go2web/
+│   ├── cache/
+│   ├── cli/
+│   ├── http/
+│   └── render/
+├── src/main/resources/
+├── pom.xml
+└── README.md
 ```
 
-**Windows (PowerShell):**
-```powershell
-Expand-Archive go2web-windows-amd64.zip
-.\install.ps1
-```
+## Build From Source
 
-After install, `go2web` is available from any terminal. To uninstall, run `uninstall.sh` / `uninstall.ps1` from the same archive.
+Requirements:
 
----
+- Java 17 or newer
+- Maven 3.6 or newer
 
-## Build from source
-
-### Requirements
-
-- Java 17+
-- Maven 3.6+
+Build the shaded jar:
 
 ```bash
-mvn clean package -q
+mvn clean package
+```
+
+Run the launcher script from the repository root:
+
+```bash
 chmod +x go2web
+./go2web -h
 ```
 
 ## Usage
 
-```
-go2web -h                          # show help
-go2web -u <URL>                    # fetch URL and print human-readable content
-go2web -u <URL> --accept JSON      # prefer JSON response
-go2web -u <URL> --accept HTML      # prefer HTML response
-go2web -s <search term>            # search DuckDuckGo, print top 10 results
-go2web -s <search term> --engine yahoo     # search Yahoo
-go2web -s <search term> --engine duckduckgo  # search DuckDuckGo (default)
-```
-
-## Examples
-
 ```bash
-# Fetch a webpage as plain text
-./go2web -u https://example.com
-
-# Fetch a JSON API endpoint
-./go2web -u https://httpbin.org/get --accept JSON
-
-# Follows HTTP redirects automatically (e.g. http → https)
-./go2web -u http://google.com
-
-# Search DuckDuckGo and optionally open a result
-./go2web -s "java socket programming"
-
-# Search Yahoo
-./go2web -s "java socket programming" --engine yahoo
+go2web -h
+go2web -u https://example.com
+go2web -u https://httpbin.org/json --accept JSON
+go2web -u https://example.com --accept HTML
+go2web -s "java socket programming"
+go2web -s "java socket programming" --engine yahoo
 ```
 
-## Config File
+## Configuration
 
-Set the default search engine in `~/.go2web-config`:
+When the launcher script is used, the application stores config and cache relative to the launcher location.
 
+Supported config file:
+
+```text
+go2web.config
 ```
+
+Example:
+
+```text
 engine=yahoo
+accept=JSON
 ```
 
-Supported values: `duckduckgo` (default), `yahoo`.
+Supported `engine` values:
 
-The `--engine` flag always overrides the config file.
+- `duckduckgo`
+- `yahoo`
+
+Supported `accept` values:
+
+- `ANY`
+- `HTML`
+- `JSON`
+
+Command-line flags override config values.
 
 ## Cache
 
-Responses are cached in `~/.go2web-cache/` with a 1-hour TTL.
+Cached responses are stored in:
 
-## Technical Notes
+```text
+.go2web-cache/
+```
 
-- HTTP and HTTPS requests use `java.net.Socket` and `javax.net.ssl.SSLSocket` — no HTTP libraries.
-- Redirects (301, 302, 303, 307, 308) are followed up to 10 hops.
-- HTML is rendered to plain text using [jsoup](https://jsoup.org/).
-- JSON responses are pretty-printed using [Jackson](https://github.com/FasterXML/jackson).
-- CLI parsing uses [picocli](https://picocli.info/).
+Entries use a default TTL of 1 hour unless the server provides a cache lifetime through HTTP headers.
+
+## Notes
+
+- Redirects are followed automatically for common 3xx responses.
+- HTTPS requests use `SSLSocket` with HTTP/1.1 over TLS.
+- The repository also contains install and uninstall scripts intended for packaged distributions.
+
+## Repository
+
+- GitHub: <https://github.com/mcittkmims/tum-web-lab5>
